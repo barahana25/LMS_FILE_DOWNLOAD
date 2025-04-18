@@ -1,17 +1,7 @@
 # Import the Canvas class
 from canvasapi import Canvas
 import os
-from canvasapi.requester import Requester
 
-# CanvasAPI에서 제공하는 Requester 클래스를 상속받아 파일 크기를 확인하는 메서드 추가
-class CustomRequester(Requester):
-    def _get_filesize(self, url, headers=None):
-        headers = headers or {}
-        response = self._session.head(url, headers=headers)
-        if 'Content-Length' in response.headers:
-            return int(response.headers['Content-Length'])
-        return None
-    
 def make_dir(dir_name):
     if not os.path.exists(dir_name):
         os.makedirs(dir_name)
@@ -26,20 +16,33 @@ API_KEY = os.environ.get('LMS_API_KEY')
 # Initialize a new Canvas object
 canvas = Canvas(API_URL, API_KEY)
 
-# Custom requester to handle file size checking
-canvas._Canvas__requester = CustomRequester(API_URL, API_KEY)
-
 courses = canvas.get_courses()
 for course in courses:
     course_name = course.name
     course_name = course_name[:course_name.find('-')]
-    make_dir(os.path.join(path, course_name))
-    make_dir(os.path.join(path, course_name, '강의자료'))
-    make_dir(os.path.join(path, course_name, '기타파일'))
+    
+    course_file_list = course.get_files()
 
-    for file in course.get_files():
+    if list(course_file_list):
+        make_dir(os.path.join(path, course_name))
+    else:
+        continue
+
+    if any(
+        any(ext in file.display_name.lower() for ext in ['pdf', 'ppt', 'doc', 'hwp'])
+        for file in course_file_list
+    ):
+        make_dir(os.path.join(path, course_name, '강의자료'))
+    if any(
+        not any(ext in file.display_name.lower() for ext in ['pdf', 'ppt', 'doc', 'hwp'])
+        for file in course_file_list
+    ):
+        make_dir(os.path.join(path, course_name, '기타파일'))
+
+    for file in course_file_list:
         file_url = file.url
-        filesize = canvas._Canvas__requester._get_filesize(file_url)
+        filesize = file.size
+
         # 저장될 경로 설정
         if any(ext in file.display_name.lower() for ext in ['pdf', 'ppt', 'doc', 'hwp']):
             save_path = os.path.join(path, course_name, '강의자료', file.display_name)
