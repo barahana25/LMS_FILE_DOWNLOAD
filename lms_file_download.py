@@ -35,18 +35,18 @@ for course in courses:
     course_name = course_name[:course_name.find('-')]
     make_dir(os.path.join(path, course_name))
     make_dir(os.path.join(path, course_name, '강의자료'))
-    make_dir(os.path.join(path, course_name, '과제'))
+    make_dir(os.path.join(path, course_name, '기타파일'))
 
     for file in course.get_files():
         file_url = file.url
         filesize = canvas._Canvas__requester._get_filesize(file_url)
         # 저장될 경로 설정
-        if any(ext in file.display_name.lower() for ext in ['pdf', 'ppt', 'hwp']):
+        if any(ext in file.display_name.lower() for ext in ['pdf', 'ppt', 'doc', 'hwp']):
             save_path = os.path.join(path, course_name, '강의자료', file.display_name)
         else:
-            save_path = os.path.join(path, course_name, '과제', file.display_name)
+            save_path = os.path.join(path, course_name, '기타파일', file.display_name)
 
-         # 파일이 존재하면 크기 비교
+        # 파일이 존재하면 크기 비교
         if os.path.exists(save_path):
             local_size = os.path.getsize(save_path)
             if filesize is not None and local_size == filesize:
